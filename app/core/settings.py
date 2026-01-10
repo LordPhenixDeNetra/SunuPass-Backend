@@ -38,6 +38,8 @@ class Settings(BaseModel):
     app_name: str = os.getenv("APP_NAME", "SunuPass")
     environment: str = os.getenv("ENVIRONMENT", "local")
     debug: bool = os.getenv("DEBUG", "false").strip().lower() == "true"
+    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+    db_echo: bool = os.getenv("DB_ECHO", "false").strip().lower() == "true"
 
 
 @lru_cache(maxsize=1)

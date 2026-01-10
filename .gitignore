@@ -24,10 +24,14 @@ dist/
 build/
 *.egg-info/
 
+*.db
+*.sqlite3
+
 .idea/
 .vscode/
 
 .DS_Store
 Thumbs.db
 
+project-info.md
 
