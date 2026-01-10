@@ -1,6 +1,6 @@
-
-
-
+fastapi
+pydantic
+uvicorn[standard]
 SQLAlchemy>=2.0,<3
 alembic
 psycopg2-binary
