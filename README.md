@@ -39,6 +39,19 @@ Créer/mettre à jour la base :
 python -m alembic -c alembic.ini upgrade head
 ```
 
+## Seed (données de démo)
+
+```bash
+python -m app.db.seed
+```
+
+Comptes créés :
+
+- Admin: `admin@sunupass.local` / `Admin123!`
+- Organisateur: `org1@sunupass.local` / `Org123!`
+- Organisateur: `org2@sunupass.local` / `Org123!`
+- Participants: `participant1@sunupass.local` à `participant4@sunupass.local` / `Pass123!`
+
 ## Lancer l’API
 
 ```bash
@@ -96,9 +109,95 @@ Les endpoints de liste renvoient une structure :
 
 Schéma : [pagination.py](file:///n:/OneDrive%20-%20Universit%C3%A9%20Cheikh%20Anta%20DIOP%20de%20DAKAR/PycharmProjects/SunuPass/app/schemas/pagination.py)
 
+## Endpoints (détaillés)
+
+Base URL: `http://127.0.0.1:8000`
+
+Docs :
+
+- Swagger UI : `GET /docs`
+- OpenAPI JSON : `GET /openapi.json`
+- ReDoc : `GET /redoc`
+
+### Root
+
+- `GET /` : ping simple (`Hello World`)
+- `GET /hello/{name}` : ping paramétré
+- `GET /health` : état du service
+
+### Auth (`/api/v1/auth`)
+
+- `POST /api/v1/auth/register` : créer un compte
+  - Body: `{ "email": "...", "password": "...", "nom_complet": "..." }`
+  - Retour: utilisateur (sans mot de passe)
+- `POST /api/v1/auth/login` : se connecter
+  - Body: `{ "email": "...", "password": "..." }`
+  - Retour: `{ "access_token": "...", "refresh_token": "..." }`
+- `POST /api/v1/auth/refresh` : régénérer un couple de tokens (rotation)
+  - Body: `{ "refresh_token": "..." }`
+  - Retour: nouveau `{ "access_token": "...", "refresh_token": "..." }`
+- `POST /api/v1/auth/logout` : invalider un refresh token
+  - Body: `{ "refresh_token": "..." }`
+  - Retour: `204`
+
+### Users (`/api/v1/users`)
+
+Authentification: `Authorization: Bearer <access_token>`
+
+- `GET /api/v1/users/me` : récupérer son profil
+- `PATCH /api/v1/users/me` : modifier son profil
+  - Body: `{ "nom_complet": "..." }`
+- `GET /api/v1/users` : lister les utilisateurs (ADMIN uniquement)
+  - Query: `limit`, `offset`
+- `GET /api/v1/users/{user_id}` : lire un utilisateur (ADMIN ou soi-même)
+- `DELETE /api/v1/users/{user_id}` : supprimer un utilisateur (ADMIN uniquement)
+
+### Events (`/api/v1/events`)
+
+Authentification: `Authorization: Bearer <access_token>`
+
+- `POST /api/v1/events` : créer un événement (ADMIN/ORGANISATEUR)
+  - Règle: un ORGANISATEUR ne peut créer que pour lui-même (`organisateur_id == user.id`)
+- `GET /api/v1/events` : lister les événements (ADMIN voit tout, ORGANISATEUR voit les siens)
+  - Query: `limit`, `offset`
+- `GET /api/v1/events/{event_id}` : détail d’un événement (organisateur propriétaire ou ADMIN)
+- `PATCH /api/v1/events/{event_id}` : modifier un événement (organisateur propriétaire ou ADMIN)
+- `DELETE /api/v1/events/{event_id}` : supprimer un événement (organisateur propriétaire ou ADMIN)
+
+### Tickets (`/api/v1/tickets`)
+
+Authentification: `Authorization: Bearer <access_token>`
+
+- `POST /api/v1/tickets` : créer un billet (ADMIN ou le participant lui-même)
+- `GET /api/v1/tickets` : lister les billets
+  - ADMIN: peut filtrer par `participant_id` / `evenement_id`
+  - PARTICIPANT/ORGANISATEUR: ne voit que ses propres billets
+- `GET /api/v1/tickets/{ticket_id}` : lire un billet (ADMIN ou propriétaire)
+- `PATCH /api/v1/tickets/{ticket_id}` : modifier un billet (ADMIN uniquement)
+- `DELETE /api/v1/tickets/{ticket_id}` : supprimer un billet (ADMIN uniquement)
+
+### Payments (`/api/v1/payments`)
+
+Authentification: `Authorization: Bearer <access_token>`
+
+- `POST /api/v1/payments` : créer un paiement (ADMIN uniquement)
+- `GET /api/v1/payments` : lister les paiements (ADMIN uniquement)
+  - Query: `limit`, `offset`, `billet_id`
+- `GET /api/v1/payments/{payment_id}` : lire un paiement (ADMIN uniquement)
+- `PATCH /api/v1/payments/{payment_id}` : modifier un paiement (ADMIN uniquement)
+- `DELETE /api/v1/payments/{payment_id}` : supprimer un paiement (ADMIN uniquement)
+
+### Rapport de tests
+
+- Le runner génère un rapport complet dans : [endpoint_tests.md](file:///n:/OneDrive%20-%20Universit%C3%A9%20Cheikh%20Anta%20DIOP%20de%20DAKAR/PycharmProjects/SunuPass/reports/endpoint_tests.md)
+- Commande: `python scripts/endpoint_test_runner.py`
+
 ## Structure du projet
 
 - Entrée app FastAPI : [app/main.py](file:///n:/OneDrive%20-%20Universit%C3%A9%20Cheikh%20Anta%20DIOP%20de%20DAKAR/PycharmProjects/SunuPass/app/main.py)
 - Point d’entrée ASGI : [main.py](file:///n:/OneDrive%20-%20Universit%C3%A9%20Cheikh%20Anta%20DIOP%20de%20DAKAR/PycharmProjects/SunuPass/main.py)
 - Routes v1 : [router.py](file:///n:/OneDrive%20-%20Universit%C3%A9%20Cheikh%20Anta%20DIOP%20de%20DAKAR/PycharmProjects/SunuPass/app/api/v1/router.py)
 
+
+
+<!-- uvicorn main:app --reload -->

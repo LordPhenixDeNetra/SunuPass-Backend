@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_roles
@@ -22,7 +22,13 @@ from app.services.tickets import (
 router = APIRouter(prefix="/tickets", tags=["tickets"], dependencies=[Depends(get_current_user)])
 
 
-@router.post("", response_model=BilletRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=BilletRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Créer un billet",
+    description="Crée un billet (ADMIN ou le participant lui-même).",
+)
 def create_ticket(
     payload: BilletCreate,
     db: Session = Depends(get_db),
@@ -33,12 +39,17 @@ def create_ticket(
     return create_billet(db, payload)
 
 
-@router.get("", response_model=Page[BilletRead])
+@router.get(
+    "",
+    response_model=Page[BilletRead],
+    summary="Lister les billets",
+    description="Liste paginée. ADMIN peut filtrer, sinon retour uniquement sur ses billets.",
+)
 def list_tickets(
-    limit: int = 50,
-    offset: int = 0,
-    evenement_id: uuid.UUID | None = None,
-    participant_id: uuid.UUID | None = None,
+    limit: int = Query(50, ge=1, le=200, description="Taille de page"),
+    offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
+    evenement_id: uuid.UUID | None = Query(None, description="Filtrer par événement (ADMIN)"),
+    participant_id: uuid.UUID | None = Query(None, description="Filtrer par participant (ADMIN)"),
     db: Session = Depends(get_db),
     user: Utilisateur = Depends(get_current_user),
 ) -> Page[BilletRead]:
@@ -50,7 +61,12 @@ def list_tickets(
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
-@router.get("/{ticket_id}", response_model=BilletRead)
+@router.get(
+    "/{ticket_id}",
+    response_model=BilletRead,
+    summary="Lire un billet",
+    description="Retourne un billet (ADMIN ou propriétaire).",
+)
 def get_ticket(
     ticket_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -64,7 +80,12 @@ def get_ticket(
     return billet
 
 
-@router.patch("/{ticket_id}", response_model=BilletRead)
+@router.patch(
+    "/{ticket_id}",
+    response_model=BilletRead,
+    summary="Modifier un billet",
+    description="Modifie un billet (ADMIN uniquement).",
+)
 def patch_ticket(
     ticket_id: uuid.UUID,
     payload: BilletUpdate,
@@ -77,7 +98,12 @@ def patch_ticket(
     return update_billet(db, billet, payload)
 
 
-@router.delete("/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{ticket_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Supprimer un billet",
+    description="Supprime un billet (ADMIN uniquement).",
+)
 def remove_ticket(
     ticket_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -87,4 +113,3 @@ def remove_ticket(
     if billet is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     delete_billet(db, billet)
-

@@ -1,8 +1,10 @@
 fastapi
 pydantic
 uvicorn[standard]
+httpx
 SQLAlchemy>=2.0,<3
 alembic
 psycopg2-binary
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt<4

@@ -18,7 +18,13 @@ from app.services.users import get_utilisateur_by_email
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=UtilisateurRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UtilisateurRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Créer un compte",
+    description="Crée un nouvel utilisateur avec mot de passe hashé.",
+)
 def register(payload: UtilisateurRegister, db: Session = Depends(get_db)) -> UtilisateurRead:
     existing = get_utilisateur_by_email(db, payload.email)
     if existing is not None:
@@ -27,7 +33,12 @@ def register(payload: UtilisateurRegister, db: Session = Depends(get_db)) -> Uti
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post(
+    "/login",
+    response_model=Token,
+    summary="Se connecter",
+    description="Retourne un access token et un refresh token.",
+)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
     user = authenticate_user(db, payload)
     if user is None:
@@ -36,7 +47,12 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/refresh", response_model=Token)
+@router.post(
+    "/refresh",
+    response_model=Token,
+    summary="Rafraîchir les tokens",
+    description="Effectue la rotation du refresh token et renvoie un nouveau couple de tokens.",
+)
 def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> Token:
     decoded = decode_token(payload.refresh_token)
     if decoded is None or decoded.get("type") != "refresh":
@@ -57,7 +73,12 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> Token:
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Se déconnecter",
+    description="Révoque le refresh token fourni (si valide).",
+)
 def logout(payload: RefreshRequest, db: Session = Depends(get_db)) -> None:
     decoded = decode_token(payload.refresh_token)
     if decoded is None or decoded.get("type") != "refresh":

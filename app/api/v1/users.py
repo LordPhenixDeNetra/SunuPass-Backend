@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_roles
@@ -21,12 +21,22 @@ from app.services.users import (
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/me", response_model=UtilisateurRead)
+@router.get(
+    "/me",
+    response_model=UtilisateurRead,
+    summary="Lire mon profil",
+    description="Retourne le profil de l’utilisateur authentifié.",
+)
 def read_me(user: Utilisateur = Depends(get_current_user)) -> UtilisateurRead:
     return user
 
 
-@router.patch("/me", response_model=UtilisateurRead)
+@router.patch(
+    "/me",
+    response_model=UtilisateurRead,
+    summary="Mettre à jour mon profil",
+    description="Met à jour les informations du profil de l’utilisateur authentifié.",
+)
 def update_me(
     payload: UtilisateurUpdate,
     db: Session = Depends(get_db),
@@ -36,10 +46,15 @@ def update_me(
     return update_utilisateur(db, user, payload)
 
 
-@router.get("", response_model=Page[UtilisateurRead])
+@router.get(
+    "",
+    response_model=Page[UtilisateurRead],
+    summary="Lister les utilisateurs",
+    description="Liste paginée des utilisateurs (ADMIN uniquement).",
+)
 def list_users(
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=200, description="Taille de page"),
+    offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
     db: Session = Depends(get_db),
     _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
 ) -> Page[UtilisateurRead]:
@@ -47,7 +62,12 @@ def list_users(
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
-@router.get("/{user_id}", response_model=UtilisateurRead)
+@router.get(
+    "/{user_id}",
+    response_model=UtilisateurRead,
+    summary="Lire un utilisateur",
+    description="ADMIN peut lire tout le monde, sinon uniquement son propre utilisateur.",
+)
 def read_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -61,7 +81,12 @@ def read_user(
     return user
 
 
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Supprimer un utilisateur",
+    description="Supprime un utilisateur (ADMIN uniquement).",
+)
 def delete_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -71,4 +96,3 @@ def delete_user(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     delete_utilisateur(db, user)
-

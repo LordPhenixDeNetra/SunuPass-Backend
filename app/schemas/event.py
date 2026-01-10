@@ -3,28 +3,28 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import EventStatus
 
 
 class EvenementCreate(BaseModel):
-    organisateur_id: uuid.UUID
-    titre: str
-    description: str | None = None
-    date_debut: datetime
-    lieu: str | None = None
-    capacite: int
+    organisateur_id: uuid.UUID = Field(..., description="ID de l’organisateur (utilisateur).")
+    titre: str = Field(..., description="Titre de l’événement.", examples=["Festival SunuPass 2026"])
+    description: str | None = Field(default=None, description="Description libre.")
+    date_debut: datetime = Field(..., description="Date/heure de début (ISO 8601).")
+    lieu: str | None = Field(default=None, description="Lieu de l’événement.", examples=["Dakar"])
+    capacite: int = Field(..., ge=1, description="Capacité maximale (nombre de places).", examples=[500])
 
 
 class EvenementUpdate(BaseModel):
-    organisateur_id: uuid.UUID | None = None
-    titre: str | None = None
-    description: str | None = None
-    date_debut: datetime | None = None
-    lieu: str | None = None
-    capacite: int | None = None
-    statut: EventStatus | None = None
+    organisateur_id: uuid.UUID | None = Field(default=None, description="Nouveau propriétaire (ADMIN uniquement).")
+    titre: str | None = Field(default=None, description="Titre de l’événement.")
+    description: str | None = Field(default=None, description="Description libre.")
+    date_debut: datetime | None = Field(default=None, description="Date/heure de début (ISO 8601).")
+    lieu: str | None = Field(default=None, description="Lieu de l’événement.")
+    capacite: int | None = Field(default=None, ge=1, description="Capacité maximale.")
+    statut: EventStatus | None = Field(default=None, description="Statut de publication.")
 
 
 class EvenementRead(BaseModel):

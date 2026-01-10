@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.models.refresh_token import RefreshToken
 from app.models.user import Utilisateur
 from app.schemas.user import UtilisateurCreate, UtilisateurUpdate
 from app.services.pagination import paginate
@@ -46,6 +47,6 @@ def update_utilisateur(
 
 
 def delete_utilisateur(db: Session, user: Utilisateur) -> None:
+    db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
     db.delete(user)
     db.commit()
-

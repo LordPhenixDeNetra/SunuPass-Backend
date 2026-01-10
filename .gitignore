@@ -35,3 +35,8 @@ Thumbs.db
 
 project-info.md
 
+
+smoke_test_endpoints.py
+endpoint_test_runner.py
+endpoint_tests.md
+
