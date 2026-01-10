@@ -26,6 +26,9 @@ class Evenement(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     organisateur: Mapped["Utilisateur"] = relationship(back_populates="evenements")
     billets: Mapped[list["Billet"]] = relationship(back_populates="evenement")

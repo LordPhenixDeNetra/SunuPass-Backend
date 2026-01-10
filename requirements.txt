@@ -4,3 +4,5 @@
 SQLAlchemy>=2.0,<3
 alembic
 psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]

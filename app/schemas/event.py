@@ -39,3 +39,4 @@ class EvenementRead(BaseModel):
     capacite: int
     statut: EventStatus
     created_at: datetime
+    updated_at: datetime

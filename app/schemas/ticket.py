@@ -35,4 +35,4 @@ class BilletRead(BaseModel):
     qr_code: str | None
     statut: TicketStatus
     created_at: datetime
-
+    updated_at: datetime

@@ -23,9 +23,11 @@ def get_evenement(db: Session, evenement_id: uuid.UUID) -> Evenement | None:
 
 
 def list_evenements_paginated(
-    db: Session, *, limit: int = 50, offset: int = 0
+    db: Session, *, limit: int = 50, offset: int = 0, organisateur_id: uuid.UUID | None = None
 ) -> tuple[list[Evenement], int]:
     stmt = select(Evenement).order_by(Evenement.created_at.desc())
+    if organisateur_id is not None:
+        stmt = stmt.where(Evenement.organisateur_id == organisateur_id)
     return paginate(db, stmt, limit=limit, offset=offset)
 
 

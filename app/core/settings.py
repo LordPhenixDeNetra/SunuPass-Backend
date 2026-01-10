@@ -40,6 +40,10 @@ class Settings(BaseModel):
     debug: bool = os.getenv("DEBUG", "false").strip().lower() == "true"
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
     db_echo: bool = os.getenv("DB_ECHO", "false").strip().lower() == "true"
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "CHANGE_ME")
+    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    refresh_token_expire_days: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
 
 
 @lru_cache(maxsize=1)

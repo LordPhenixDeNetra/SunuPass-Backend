@@ -14,9 +14,16 @@ class UtilisateurCreate(BaseModel):
     role: UserRole = UserRole.PARTICIPANT
 
 
+class UtilisateurRegister(BaseModel):
+    email: str
+    password: str
+    nom_complet: str | None = None
+
+
 class UtilisateurUpdate(BaseModel):
     nom_complet: str | None = None
     role: UserRole | None = None
+    is_active: bool | None = None
 
 
 class UtilisateurRead(BaseModel):
@@ -26,5 +33,6 @@ class UtilisateurRead(BaseModel):
     email: str
     nom_complet: str | None
     role: UserRole
+    is_active: bool
     created_at: datetime
-
+    updated_at: datetime

@@ -29,4 +29,5 @@ class PaiementRead(BaseModel):
     moyen: str
     statut: PaymentStatus
     date_paiement: datetime | None
-
+    created_at: datetime
+    updated_at: datetime
