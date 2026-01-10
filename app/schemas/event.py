@@ -17,6 +17,16 @@ class EvenementCreate(BaseModel):
     capacite: int
 
 
+class EvenementUpdate(BaseModel):
+    organisateur_id: uuid.UUID | None = None
+    titre: str | None = None
+    description: str | None = None
+    date_debut: datetime | None = None
+    lieu: str | None = None
+    capacite: int | None = None
+    statut: EventStatus | None = None
+
+
 class EvenementRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,4 +39,3 @@ class EvenementRead(BaseModel):
     capacite: int
     statut: EventStatus
     created_at: datetime
-
