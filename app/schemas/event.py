@@ -15,6 +15,8 @@ class EvenementCreate(BaseModel):
     date_debut: datetime = Field(..., description="Date/heure de début (ISO 8601).")
     lieu: str | None = Field(default=None, description="Lieu de l’événement.", examples=["Dakar"])
     capacite: int = Field(..., ge=1, description="Capacité maximale (nombre de places).", examples=[500])
+    branding_logo_url: str | None = Field(default=None, description="URL du logo pour le branding.")
+    branding_primary_color: str | None = Field(default=None, description="Couleur principale (ex: #0ea5e9).")
 
 
 class EvenementUpdate(BaseModel):
@@ -24,6 +26,8 @@ class EvenementUpdate(BaseModel):
     date_debut: datetime | None = Field(default=None, description="Date/heure de début (ISO 8601).")
     lieu: str | None = Field(default=None, description="Lieu de l’événement.")
     capacite: int | None = Field(default=None, ge=1, description="Capacité maximale.")
+    branding_logo_url: str | None = Field(default=None, description="URL du logo pour le branding.")
+    branding_primary_color: str | None = Field(default=None, description="Couleur principale (ex: #0ea5e9).")
     statut: EventStatus | None = Field(default=None, description="Statut de publication.")
 
 
@@ -37,6 +41,8 @@ class EvenementRead(BaseModel):
     date_debut: datetime
     lieu: str | None
     capacite: int
+    branding_logo_url: str | None
+    branding_primary_color: str | None
     statut: EventStatus
     created_at: datetime
     updated_at: datetime

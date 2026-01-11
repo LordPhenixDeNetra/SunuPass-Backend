@@ -7,6 +7,7 @@ class UserRole(str, enum.Enum):
     ADMIN = "ADMIN"
     ORGANISATEUR = "ORGANISATEUR"
     PARTICIPANT = "PARTICIPANT"
+    AGENT = "AGENT"
 
 
 class EventStatus(str, enum.Enum):
@@ -26,4 +27,9 @@ class PaymentStatus(str, enum.Enum):
     EN_ATTENTE = "EN_ATTENTE"
     SUCCES = "SUCCES"
     ECHEC = "ECHEC"
+    REMBOURSE = "REMBOURSE"
 
+
+class PromoDiscountType(str, enum.Enum):
+    PERCENT = "PERCENT"
+    FIXED = "FIXED"

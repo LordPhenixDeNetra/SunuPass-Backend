@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_roles
+from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import Utilisateur
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/events", tags=["events"])
     status_code=status.HTTP_201_CREATED,
     summary="Créer un événement",
     description="Crée un événement (ADMIN/ORGANISATEUR). Un organisateur ne peut créer que pour lui-même.",
+    responses=AUTHZ_ERRORS,
 )
 def create_event(
     payload: EvenementCreate,
@@ -44,6 +46,7 @@ def create_event(
     response_model=Page[EvenementRead],
     summary="Lister les événements",
     description="Liste paginée. ADMIN voit tout, ORGANISATEUR voit uniquement ses événements.",
+    responses=AUTHZ_ERRORS,
 )
 def list_events(
     limit: int = Query(50, ge=1, le=200, description="Taille de page"),
@@ -63,6 +66,7 @@ def list_events(
     response_model=EvenementRead,
     summary="Lire un événement",
     description="Retourne un événement. Un organisateur ne peut accéder qu’à ses événements.",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def get_event(
     event_id: uuid.UUID,
@@ -82,6 +86,7 @@ def get_event(
     response_model=EvenementRead,
     summary="Modifier un événement",
     description="Modifie un événement (organisateur propriétaire ou ADMIN).",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_event(
     event_id: uuid.UUID,
@@ -102,6 +107,7 @@ def patch_event(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un événement",
     description="Supprime un événement (organisateur propriétaire ou ADMIN).",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def remove_event(
     event_id: uuid.UUID,

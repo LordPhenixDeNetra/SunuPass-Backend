@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,9 +17,11 @@ from app.core.settings import get_settings
 from app.db.session import SessionLocal
 from app.models.enums import EventStatus, PaymentStatus, TicketStatus, UserRole
 from app.models.event import Evenement
+from app.models.promo_code import PromoCode
 from app.models.payment import Paiement
 from app.models.refresh_token import RefreshToken
 from app.models.ticket import Billet
+from app.models.ticket_type import TicketType
 from app.models.user import Utilisateur
 from app.services.refresh_tokens import revoke_refresh_token
 
@@ -220,6 +223,15 @@ def seed(db: Session) -> SeedResult:
     )
     users_created += int(created)
 
+    agent, created = _ensure_user(
+        db,
+        email="agent1@sunupass.local",
+        nom_complet="Agent 1",
+        role=UserRole.AGENT,
+        password="Agent123!",
+    )
+    users_created += int(created)
+
     participants: list[Utilisateur] = []
     for i in range(1, 5):
         p, created = _ensure_user(
@@ -243,6 +255,41 @@ def seed(db: Session) -> SeedResult:
         statut=EventStatus.PUBLIE,
     )
     events_created += int(created)
+
+    existing_tt = db.execute(
+        select(TicketType).where(TicketType.evenement_id == e1.id, TicketType.code == "VIP")
+    ).scalar_one_or_none()
+    if existing_tt is None:
+        tt = TicketType(
+            evenement_id=e1.id,
+            code="VIP",
+            label="Pass VIP",
+            prix=Decimal("15000.00"),
+            quota=50,
+            sales_start=None,
+            sales_end=None,
+            is_active=True,
+        )
+        db.add(tt)
+        db.flush()
+
+    existing_promo = db.execute(
+        select(PromoCode).where(PromoCode.evenement_id == e1.id, PromoCode.code == "EARLY10")
+    ).scalar_one_or_none()
+    if existing_promo is None:
+        promo = PromoCode(
+            evenement_id=e1.id,
+            code="EARLY10",
+            discount_type="PERCENT",
+            value=Decimal("10.00"),
+            starts_at=None,
+            ends_at=None,
+            usage_limit=100,
+            used_count=0,
+            is_active=True,
+        )
+        db.add(promo)
+        db.flush()
 
     e2, created = _ensure_event(
         db,
@@ -279,8 +326,6 @@ def seed(db: Session) -> SeedResult:
         statut=EventStatus.TERMINE,
     )
     events_created += int(created)
-
-    from decimal import Decimal
 
     b11, created = _ensure_ticket(
         db,
@@ -385,4 +430,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

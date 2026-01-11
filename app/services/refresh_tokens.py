@@ -35,9 +35,12 @@ def get_refresh_token_by_jti(db: Session, jti: str) -> RefreshToken | None:
 
 
 def verify_refresh_token_row(row: RefreshToken, refresh_token: str) -> bool:
+    expires_at = row.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
     if row.revoked:
         return False
-    if row.expires_at <= datetime.now(timezone.utc):
+    if expires_at <= datetime.now(timezone.utc):
         return False
     return row.token_hash == hash_token(refresh_token)
 
@@ -46,4 +49,3 @@ def revoke_refresh_token(db: Session, row: RefreshToken) -> None:
     row.revoked = True
     db.add(row)
     db.commit()
-

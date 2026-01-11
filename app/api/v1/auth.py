@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.openapi_responses import RESPONSES_401, RESPONSES_422, RESPONSES_500
 from app.db.session import get_db
 from app.core.security import decode_token
 from app.schemas.auth import LoginRequest, RefreshRequest, Token
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     status_code=status.HTTP_201_CREATED,
     summary="Créer un compte",
     description="Crée un nouvel utilisateur avec mot de passe hashé.",
+    responses={400: {"description": "Email déjà enregistré."}, 422: RESPONSES_422, 500: RESPONSES_500},
 )
 def register(payload: UtilisateurRegister, db: Session = Depends(get_db)) -> UtilisateurRead:
     existing = get_utilisateur_by_email(db, payload.email)
@@ -38,6 +40,7 @@ def register(payload: UtilisateurRegister, db: Session = Depends(get_db)) -> Uti
     response_model=Token,
     summary="Se connecter",
     description="Retourne un access token et un refresh token.",
+    responses={401: RESPONSES_401, 422: RESPONSES_422, 500: RESPONSES_500},
 )
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
     user = authenticate_user(db, payload)
@@ -52,6 +55,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
     response_model=Token,
     summary="Rafraîchir les tokens",
     description="Effectue la rotation du refresh token et renvoie un nouveau couple de tokens.",
+    responses={401: RESPONSES_401, 422: RESPONSES_422, 500: RESPONSES_500},
 )
 def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> Token:
     decoded = decode_token(payload.refresh_token)
@@ -78,6 +82,7 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> Token:
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Se déconnecter",
     description="Révoque le refresh token fourni (si valide).",
+    responses={422: RESPONSES_422, 500: RESPONSES_500},
 )
 def logout(payload: RefreshRequest, db: Session = Depends(get_db)) -> None:
     decoded = decode_token(payload.refresh_token)

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.enums import PaymentStatus, TicketStatus
 from app.models.payment import Paiement
+from app.models.ticket import Billet
 from app.schemas.payment import PaiementCreate, PaiementUpdate
+from app.services.notifications import create_notification
 from app.services.pagination import paginate
 
 
@@ -44,13 +48,41 @@ def update_paiement(db: Session, paiement: Paiement, payload: PaiementUpdate) ->
     data = payload.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(paiement, key, value)
+    billet = db.get(Billet, paiement.billet_id)
+    if billet is not None and "statut" in data:
+        if paiement.statut == PaymentStatus.SUCCES:
+            billet.statut = TicketStatus.PAYE
+            db.add(billet)
+            if billet.participant_id is not None:
+                create_notification(
+                    db,
+                    user_id=billet.participant_id,
+                    type_="PAYMENT_SUCCESS",
+                    title="Paiement confirmé",
+                    body=f"Votre paiement pour le billet {billet.type} est confirmé.",
+                )
+        elif paiement.statut == PaymentStatus.REMBOURSE:
+            billet.statut = TicketStatus.ANNULE
+            db.add(billet)
+            if billet.participant_id is not None:
+                create_notification(
+                    db,
+                    user_id=billet.participant_id,
+                    type_="PAYMENT_REFUNDED",
+                    title="Paiement remboursé",
+                    body=f"Votre paiement pour le billet {billet.type} a été remboursé.",
+                )
     db.add(paiement)
     db.commit()
     db.refresh(paiement)
     return paiement
 
 
+def refund_paiement(db: Session, paiement: Paiement) -> Paiement:
+    payload = PaiementUpdate(statut=PaymentStatus.REMBOURSE, date_paiement=datetime.now(timezone.utc))
+    return update_paiement(db, paiement, payload)
+
+
 def delete_paiement(db: Session, paiement: Paiement) -> None:
     db.delete(paiement)
     db.commit()
-

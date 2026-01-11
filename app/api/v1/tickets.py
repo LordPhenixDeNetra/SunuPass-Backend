@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_roles
+from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import Utilisateur
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/tickets", tags=["tickets"], dependencies=[Depends(ge
     status_code=status.HTTP_201_CREATED,
     summary="Créer un billet",
     description="Crée un billet (ADMIN ou le participant lui-même).",
+    responses=AUTHZ_ERRORS,
 )
 def create_ticket(
     payload: BilletCreate,
@@ -36,7 +38,10 @@ def create_ticket(
 ) -> BilletRead:
     if user.role != UserRole.ADMIN and payload.participant_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    return create_billet(db, payload)
+    try:
+        return create_billet(db, payload)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get(
@@ -44,6 +49,7 @@ def create_ticket(
     response_model=Page[BilletRead],
     summary="Lister les billets",
     description="Liste paginée. ADMIN peut filtrer, sinon retour uniquement sur ses billets.",
+    responses=AUTHZ_ERRORS,
 )
 def list_tickets(
     limit: int = Query(50, ge=1, le=200, description="Taille de page"),
@@ -66,6 +72,7 @@ def list_tickets(
     response_model=BilletRead,
     summary="Lire un billet",
     description="Retourne un billet (ADMIN ou propriétaire).",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def get_ticket(
     ticket_id: uuid.UUID,
@@ -85,6 +92,7 @@ def get_ticket(
     response_model=BilletRead,
     summary="Modifier un billet",
     description="Modifie un billet (ADMIN uniquement).",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_ticket(
     ticket_id: uuid.UUID,
@@ -103,6 +111,7 @@ def patch_ticket(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un billet",
     description="Supprime un billet (ADMIN uniquement).",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def remove_ticket(
     ticket_id: uuid.UUID,

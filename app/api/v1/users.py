@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_roles
+from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import Utilisateur
@@ -26,6 +27,7 @@ router = APIRouter(prefix="/users", tags=["users"])
     response_model=UtilisateurRead,
     summary="Lire mon profil",
     description="Retourne le profil de l’utilisateur authentifié.",
+    responses=AUTHZ_ERRORS,
 )
 def read_me(user: Utilisateur = Depends(get_current_user)) -> UtilisateurRead:
     return user
@@ -36,6 +38,7 @@ def read_me(user: Utilisateur = Depends(get_current_user)) -> UtilisateurRead:
     response_model=UtilisateurRead,
     summary="Mettre à jour mon profil",
     description="Met à jour les informations du profil de l’utilisateur authentifié.",
+    responses=AUTHZ_ERRORS,
 )
 def update_me(
     payload: UtilisateurUpdate,
@@ -51,6 +54,7 @@ def update_me(
     response_model=Page[UtilisateurRead],
     summary="Lister les utilisateurs",
     description="Liste paginée des utilisateurs (ADMIN uniquement).",
+    responses=AUTHZ_ERRORS,
 )
 def list_users(
     limit: int = Query(50, ge=1, le=200, description="Taille de page"),
@@ -67,6 +71,7 @@ def list_users(
     response_model=UtilisateurRead,
     summary="Lire un utilisateur",
     description="ADMIN peut lire tout le monde, sinon uniquement son propre utilisateur.",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def read_user(
     user_id: uuid.UUID,
@@ -86,6 +91,7 @@ def read_user(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un utilisateur",
     description="Supprime un utilisateur (ADMIN uniquement).",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def delete_user(
     user_id: uuid.UUID,

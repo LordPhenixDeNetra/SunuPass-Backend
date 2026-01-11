@@ -16,11 +16,19 @@ class Billet(Base):
     __tablename__ = "billets"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    evenement_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("evenements.id"), nullable=False)
-    participant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("utilisateurs.id"), nullable=False)
+    evenement_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("evenements.id", ondelete="CASCADE"), nullable=False
+    )
+    participant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("utilisateurs.id"), nullable=True)
+    guest_email: Mapped[str | None] = mapped_column(String(320))
+    guest_nom_complet: Mapped[str | None] = mapped_column(String(200))
+    guest_phone: Mapped[str | None] = mapped_column(String(50))
+    ticket_type_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("ticket_types.id"))
     type: Mapped[str] = mapped_column(String(50), nullable=False)
+    prix_initial: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     prix: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     qr_code: Mapped[str | None] = mapped_column(Text, unique=True)
+    promo_code_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("promo_codes.id"))
     statut: Mapped[TicketStatus] = mapped_column(
         Enum(TicketStatus, name="ticket_status"),
         default=TicketStatus.CREE,
@@ -32,5 +40,8 @@ class Billet(Base):
     )
 
     evenement: Mapped["Evenement"] = relationship(back_populates="billets")
-    participant: Mapped["Utilisateur"] = relationship(back_populates="billets")
+    participant: Mapped[Optional["Utilisateur"]] = relationship(back_populates="billets")
     paiement: Mapped[Optional["Paiement"]] = relationship(back_populates="billet", uselist=False)
+    ticket_type: Mapped[Optional["TicketType"]] = relationship(back_populates="billets")
+    promo_code: Mapped[Optional["PromoCode"]] = relationship(back_populates="billets")
+    scans: Mapped[list["TicketScan"]] = relationship(back_populates="billet", cascade="all, delete-orphan")

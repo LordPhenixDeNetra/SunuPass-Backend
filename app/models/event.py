@@ -20,6 +20,8 @@ class Evenement(Base):
     date_debut: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     lieu: Mapped[str | None] = mapped_column(String(150))
     capacite: Mapped[int] = mapped_column(Integer, nullable=False)
+    branding_logo_url: Mapped[str | None] = mapped_column(String(500))
+    branding_primary_color: Mapped[str | None] = mapped_column(String(20))
     statut: Mapped[EventStatus] = mapped_column(
         Enum(EventStatus, name="event_status"),
         default=EventStatus.BROUILLON,
@@ -31,4 +33,6 @@ class Evenement(Base):
     )
 
     organisateur: Mapped["Utilisateur"] = relationship(back_populates="evenements")
-    billets: Mapped[list["Billet"]] = relationship(back_populates="evenement")
+    billets: Mapped[list["Billet"]] = relationship(back_populates="evenement", cascade="all, delete-orphan")
+    ticket_types: Mapped[list["TicketType"]] = relationship(back_populates="evenement", cascade="all, delete-orphan")
+    promo_codes: Mapped[list["PromoCode"]] = relationship(back_populates="evenement", cascade="all, delete-orphan")

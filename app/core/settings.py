@@ -40,19 +40,30 @@ class Settings(BaseModel):
     debug: bool
     database_url: str
     db_echo: bool
+    cors_origins: list[str]
     jwt_secret_key: str
     jwt_algorithm: str
     access_token_expire_minutes: int
     refresh_token_expire_days: int
 
 
+def _parse_csv(value: str) -> list[str]:
+    items = [part.strip() for part in value.split(",")]
+    return [item for item in items if item]
+
+
 def _settings_from_env() -> dict[str, object]:
+    cors_raw = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
+    )
     return {
         "app_name": os.getenv("APP_NAME", "SunuPass"),
         "environment": os.getenv("ENVIRONMENT", "local"),
         "debug": os.getenv("DEBUG", "false").strip().lower() == "true",
         "database_url": os.getenv("DATABASE_URL", "sqlite:///./app.db"),
         "db_echo": os.getenv("DB_ECHO", "false").strip().lower() == "true",
+        "cors_origins": _parse_csv(cors_raw),
         "jwt_secret_key": os.getenv("JWT_SECRET_KEY", "CHANGE_ME"),
         "jwt_algorithm": os.getenv("JWT_ALGORITHM", "HS256"),
         "access_token_expire_minutes": int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),

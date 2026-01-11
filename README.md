@@ -25,6 +25,7 @@ Variables utiles (voir [.env.example](file:///n:/OneDrive%20-%20Universit%C3%A9%
 - `DEBUG` (`true|false`)
 - `DATABASE_URL` (ex: `sqlite:///./app.db` ou `postgresql+psycopg2://user:pass@host:5432/db`)
 - `DB_ECHO` (`true|false`)
+- `CORS_ORIGINS` (liste séparée par virgules, ex: `http://localhost:5173,http://localhost:3000`)
 - `JWT_SECRET_KEY` (à changer en production)
 - `JWT_ALGORITHM` (défaut: `HS256`)
 - `ACCESS_TOKEN_EXPIRE_MINUTES` (défaut: `60`)
