@@ -30,6 +30,16 @@ def _request_id(request: Request) -> str | None:
     return value if value else None
 
 
+def _sanitize_error_details(details: Any) -> Any:
+    if isinstance(details, bytes):
+        return details.decode("utf-8", errors="replace")
+    if isinstance(details, dict):
+        return {k: _sanitize_error_details(v) for k, v in details.items()}
+    if isinstance(details, list):
+        return [_sanitize_error_details(v) for v in details]
+    return details
+
+
 def _to_error_response(
     *,
     request: Request,
@@ -41,7 +51,7 @@ def _to_error_response(
     payload = ErrorResponse(
         code=code or _status_code_to_code(status_code),
         message=message,
-        details=details,
+        details=_sanitize_error_details(details),
         request_id=_request_id(request),
     )
     return JSONResponse(status_code=status_code, content=payload.model_dump())

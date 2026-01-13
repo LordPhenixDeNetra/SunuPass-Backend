@@ -17,18 +17,20 @@ class Billet(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     evenement_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("evenements.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("evenements.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    participant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("utilisateurs.id"), nullable=True)
+    participant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("utilisateurs.id"), nullable=True, index=True
+    )
     guest_email: Mapped[str | None] = mapped_column(String(320))
     guest_nom_complet: Mapped[str | None] = mapped_column(String(200))
     guest_phone: Mapped[str | None] = mapped_column(String(50))
-    ticket_type_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("ticket_types.id"))
+    ticket_type_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("ticket_types.id"), index=True)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     prix_initial: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     prix: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     qr_code: Mapped[str | None] = mapped_column(Text, unique=True)
-    promo_code_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("promo_codes.id"))
+    promo_code_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("promo_codes.id"), index=True)
     statut: Mapped[TicketStatus] = mapped_column(
         Enum(TicketStatus, name="ticket_status"),
         default=TicketStatus.CREE,

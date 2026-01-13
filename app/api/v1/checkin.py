@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
+from app.api.deps import require_users
 from app.api.openapi_responses import AUTHZ_ERRORS
 from app.db.session import get_db
-from app.models.enums import UserRole
-from app.models.user import Utilisateur
+from app.models.event import evenement_agents
+from app.models.user import Admin, Agent, Utilisateur
 from app.schemas.checkin import TicketScanRequest, TicketScanResponse
 from app.services.checkin import validate_and_checkin
 from app.services.notifications import create_notification
@@ -24,8 +25,16 @@ router = APIRouter(prefix="/checkin", tags=["checkin"])
 def scan_qr(
     payload: TicketScanRequest,
     db: Session = Depends(get_db),
-    agent: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.AGENT)),
+    agent: Utilisateur = Depends(require_users(Admin, Agent)),
 ) -> TicketScanResponse:
+    if payload.evenement_id is not None and isinstance(agent, Agent):
+        stmt = select(evenement_agents.c.agent_id).where(
+            evenement_agents.c.evenement_id == payload.evenement_id,
+            evenement_agents.c.agent_id == agent.id,
+        )
+        if db.execute(stmt).first() is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
     result, ticket, scanned_at = validate_and_checkin(
         db,
         qr_code=payload.qr_code,
@@ -46,4 +55,3 @@ def scan_qr(
         ticket_status=None if ticket is None else str(ticket.statut),
         scanned_at=scanned_at,
     )
-

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -30,3 +30,49 @@ class Utilisateur(Base):
 
     evenements: Mapped[list["Evenement"]] = relationship(back_populates="organisateur")
     billets: Mapped[list["Billet"]] = relationship(back_populates="participant")
+
+    __mapper_args__ = {
+        "polymorphic_on": role,
+    }
+
+
+class Admin(Utilisateur):
+    __tablename__ = "admins"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("utilisateurs.id", ondelete="CASCADE"), primary_key=True
+    )
+    __mapper_args__ = {"polymorphic_identity": UserRole.ADMIN}
+
+
+class Organisateur(Utilisateur):
+    __tablename__ = "organisateurs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("utilisateurs.id", ondelete="CASCADE"), primary_key=True
+    )
+    __mapper_args__ = {"polymorphic_identity": UserRole.ORGANISATEUR}
+
+
+class Participant(Utilisateur):
+    __tablename__ = "participants"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("utilisateurs.id", ondelete="CASCADE"), primary_key=True
+    )
+    __mapper_args__ = {"polymorphic_identity": UserRole.PARTICIPANT}
+
+
+class Agent(Utilisateur):
+    __tablename__ = "agents"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("utilisateurs.id", ondelete="CASCADE"), primary_key=True
+    )
+    __mapper_args__ = {"polymorphic_identity": UserRole.AGENT}
+
+    evenements_assignes: Mapped[list["Evenement"]] = relationship(
+        "Evenement",
+        secondary="evenement_agents",
+        back_populates="agents",
+    )

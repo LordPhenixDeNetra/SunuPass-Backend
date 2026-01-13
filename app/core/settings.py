@@ -45,6 +45,10 @@ class Settings(BaseModel):
     jwt_algorithm: str
     access_token_expire_minutes: int
     refresh_token_expire_days: int
+    firebase_auth_enabled: bool = False
+    firebase_credentials_path: str | None = None
+    firebase_service_account_json: str | None = None
+    firebase_project_id: str | None = None
 
 
 def _parse_csv(value: str) -> list[str]:
@@ -55,7 +59,7 @@ def _parse_csv(value: str) -> list[str]:
 def _settings_from_env() -> dict[str, object]:
     cors_raw = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:8080",
     )
     return {
         "app_name": os.getenv("APP_NAME", "SunuPass"),
@@ -68,6 +72,10 @@ def _settings_from_env() -> dict[str, object]:
         "jwt_algorithm": os.getenv("JWT_ALGORITHM", "HS256"),
         "access_token_expire_minutes": int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")),
         "refresh_token_expire_days": int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
+        "firebase_auth_enabled": os.getenv("FIREBASE_AUTH_ENABLED", "false").strip().lower() == "true",
+        "firebase_credentials_path": os.getenv("FIREBASE_CREDENTIALS_PATH") or None,
+        "firebase_service_account_json": os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON") or None,
+        "firebase_project_id": os.getenv("FIREBASE_PROJECT_ID") or None,
     }
 
 

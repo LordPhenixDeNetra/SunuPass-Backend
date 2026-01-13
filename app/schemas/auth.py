@@ -19,3 +19,7 @@ class LoginRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(..., description="Refresh token obtenu au login.")
+
+
+class FirebaseLoginRequest(BaseModel):
+    id_token: str = Field(..., description="Firebase ID token (JWT) obtenu via Firebase Auth.")

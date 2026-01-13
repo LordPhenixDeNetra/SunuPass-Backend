@@ -5,14 +5,28 @@ import uuid
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.models.enums import UserRole
 from app.models.refresh_token import RefreshToken
-from app.models.user import Utilisateur
+from app.models.user import Admin, Agent, Organisateur, Participant, Utilisateur
 from app.schemas.user import UtilisateurCreate, UtilisateurUpdate
 from app.services.pagination import paginate
 
 
 def create_utilisateur(db: Session, payload: UtilisateurCreate) -> Utilisateur:
-    user = Utilisateur(**payload.model_dump())
+    user_cls: type[Utilisateur]
+    if payload.role == UserRole.ADMIN:
+        user_cls = Admin
+    elif payload.role == UserRole.ORGANISATEUR:
+        user_cls = Organisateur
+    elif payload.role == UserRole.AGENT:
+        user_cls = Agent
+    else:
+        user_cls = Participant
+
+    user = user_cls(
+        email=payload.email,
+        nom_complet=payload.nom_complet,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -38,6 +52,8 @@ def update_utilisateur(
     db: Session, user: Utilisateur, payload: UtilisateurUpdate
 ) -> Utilisateur:
     data = payload.model_dump(exclude_unset=True)
+    if "role" in data and data["role"] is not None and data["role"] != user.role:
+        raise ValueError("Role change is not supported")
     for key, value in data.items():
         setattr(user, key, value)
     db.add(user)

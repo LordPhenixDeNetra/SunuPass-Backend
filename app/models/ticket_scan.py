@@ -16,9 +16,9 @@ class TicketScan(Base):
     billet_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("billets.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    agent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("utilisateurs.id"), nullable=False, index=True)
+    agent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("agents.id"), nullable=False, index=True)
     result: Mapped[str] = mapped_column(String(30), nullable=False)
     scanned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     billet: Mapped["Billet"] = relationship(back_populates="scans")
-    agent: Mapped["Utilisateur"] = relationship()
+    agent: Mapped["Agent"] = relationship()

@@ -5,11 +5,10 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_roles
+from app.api.deps import get_current_user, require_users
 from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
-from app.models.enums import UserRole
-from app.models.user import Utilisateur
+from app.models.user import Admin, Utilisateur
 from app.schemas.pagination import Page
 from app.schemas.payment import PaiementCreate, PaiementRead, PaiementUpdate
 from app.services.payments import (
@@ -35,7 +34,7 @@ router = APIRouter(prefix="/payments", tags=["payments"], dependencies=[Depends(
 def create_payment(
     payload: PaiementCreate,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> PaiementRead:
     return create_paiement(db, payload)
 
@@ -52,7 +51,7 @@ def list_payments(
     offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
     billet_id: uuid.UUID | None = Query(None, description="Filtrer par billet"),
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> Page[PaiementRead]:
     items, total = list_paiements_paginated(db, limit=limit, offset=offset, billet_id=billet_id)
     return Page(items=items, total=total, limit=limit, offset=offset)
@@ -68,7 +67,7 @@ def list_payments(
 def get_payment(
     payment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> PaiementRead:
     paiement = get_paiement(db, payment_id)
     if paiement is None:
@@ -87,7 +86,7 @@ def patch_payment(
     payment_id: uuid.UUID,
     payload: PaiementUpdate,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> PaiementRead:
     paiement = get_paiement(db, payment_id)
     if paiement is None:
@@ -104,7 +103,7 @@ def patch_payment(
 def refund_payment(
     payment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> PaiementRead:
     paiement = get_paiement(db, payment_id)
     if paiement is None:
@@ -122,7 +121,7 @@ def refund_payment(
 def remove_payment(
     payment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> None:
     paiement = get_paiement(db, payment_id)
     if paiement is None:

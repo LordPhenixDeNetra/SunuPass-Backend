@@ -5,13 +5,12 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
+from app.api.deps import require_users
 from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
-from app.models.enums import UserRole
 from app.models.event import Evenement
 from app.models.promo_code import PromoCode
-from app.models.user import Utilisateur
+from app.models.user import Admin, Organisateur, Utilisateur
 from app.schemas.promo import PromoCodeCreate, PromoCodeRead, PromoCodeUpdate
 from app.services.promo_codes import (
     create_promo_code,
@@ -32,7 +31,7 @@ def _get_event(db: Session, event_id: uuid.UUID) -> Evenement:
 
 
 def _require_owner_or_admin(user: Utilisateur, evt: Evenement) -> None:
-    if user.role != UserRole.ADMIN and evt.organisateur_id != user.id:
+    if not isinstance(user, Admin) and evt.organisateur_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
@@ -45,7 +44,7 @@ def _require_owner_or_admin(user: Utilisateur, evt: Evenement) -> None:
 def list_promos(
     event_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> list[PromoCode]:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)
@@ -63,7 +62,7 @@ def create_promo(
     event_id: uuid.UUID,
     payload: PromoCodeCreate,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> PromoCode:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)
@@ -84,7 +83,7 @@ def patch_promo(
     promo_code_id: uuid.UUID,
     payload: PromoCodeUpdate,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> PromoCode:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)
@@ -104,7 +103,7 @@ def remove_promo(
     event_id: uuid.UUID,
     promo_code_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> None:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)

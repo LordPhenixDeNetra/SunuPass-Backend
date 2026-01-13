@@ -5,11 +5,10 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_roles
+from app.api.deps import get_current_user, require_users
 from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
-from app.models.enums import UserRole
-from app.models.user import Utilisateur
+from app.models.user import Admin, Utilisateur
 from app.schemas.pagination import Page
 from app.schemas.ticket import BilletCreate, BilletRead, BilletUpdate
 from app.services.tickets import (
@@ -36,7 +35,7 @@ def create_ticket(
     db: Session = Depends(get_db),
     user: Utilisateur = Depends(get_current_user),
 ) -> BilletRead:
-    if user.role != UserRole.ADMIN and payload.participant_id != user.id:
+    if not isinstance(user, Admin) and payload.participant_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     try:
         return create_billet(db, payload)
@@ -59,7 +58,7 @@ def list_tickets(
     db: Session = Depends(get_db),
     user: Utilisateur = Depends(get_current_user),
 ) -> Page[BilletRead]:
-    if user.role != UserRole.ADMIN:
+    if not isinstance(user, Admin):
         participant_id = user.id
     items, total = list_billets_paginated(
         db, limit=limit, offset=offset, evenement_id=evenement_id, participant_id=participant_id
@@ -82,7 +81,7 @@ def get_ticket(
     billet = get_billet(db, ticket_id)
     if billet is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
-    if user.role != UserRole.ADMIN and billet.participant_id != user.id:
+    if not isinstance(user, Admin) and billet.participant_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     return billet
 
@@ -98,7 +97,7 @@ def patch_ticket(
     ticket_id: uuid.UUID,
     payload: BilletUpdate,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> BilletRead:
     billet = get_billet(db, ticket_id)
     if billet is None:
@@ -116,7 +115,7 @@ def patch_ticket(
 def remove_ticket(
     ticket_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _admin: Utilisateur = Depends(require_roles(UserRole.ADMIN)),
+    _admin: Utilisateur = Depends(require_users(Admin)),
 ) -> None:
     billet = get_billet(db, ticket_id)
     if billet is None:

@@ -5,13 +5,12 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
+from app.api.deps import require_users
 from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
-from app.models.enums import UserRole
 from app.models.event import Evenement
 from app.models.ticket_type import TicketType
-from app.models.user import Utilisateur
+from app.models.user import Admin, Organisateur, Utilisateur
 from app.schemas.ticket_type import TicketTypeCreate, TicketTypeRead, TicketTypeUpdate
 from app.services.ticket_types import (
     create_ticket_type,
@@ -32,7 +31,7 @@ def _get_event(db: Session, event_id: uuid.UUID) -> Evenement:
 
 
 def _require_owner_or_admin(user: Utilisateur, evt: Evenement) -> None:
-    if user.role != UserRole.ADMIN and evt.organisateur_id != user.id:
+    if not isinstance(user, Admin) and evt.organisateur_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
 
@@ -45,7 +44,7 @@ def _require_owner_or_admin(user: Utilisateur, evt: Evenement) -> None:
 def list_types(
     event_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> list[TicketType]:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)
@@ -63,7 +62,7 @@ def create_type(
     event_id: uuid.UUID,
     payload: TicketTypeCreate,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> TicketType:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)
@@ -84,7 +83,7 @@ def patch_type(
     ticket_type_id: uuid.UUID,
     payload: TicketTypeUpdate,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> TicketType:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)
@@ -104,7 +103,7 @@ def remove_type(
     event_id: uuid.UUID,
     ticket_type_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: Utilisateur = Depends(require_roles(UserRole.ADMIN, UserRole.ORGANISATEUR)),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
 ) -> None:
     evt = _get_event(db, event_id)
     _require_owner_or_admin(user, evt)

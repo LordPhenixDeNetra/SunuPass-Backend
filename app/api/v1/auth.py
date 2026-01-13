@@ -6,15 +6,16 @@ from sqlalchemy.orm import Session
 from app.api.openapi_responses import RESPONSES_401, RESPONSES_422, RESPONSES_500
 from app.db.session import get_db
 from app.core.security import decode_token
-from app.schemas.auth import LoginRequest, RefreshRequest, Token
+from app.schemas.auth import FirebaseLoginRequest, LoginRequest, RefreshRequest, Token
 from app.schemas.user import UtilisateurRead, UtilisateurRegister
-from app.services.auth import authenticate_user, issue_token_pair_for_user, register_user
+from app.services.auth import authenticate_firebase_user, authenticate_user, issue_token_pair_for_user, register_user
 from app.services.refresh_tokens import (
     get_refresh_token_by_jti,
     revoke_refresh_token,
     verify_refresh_token_row,
 )
 from app.services.users import get_utilisateur_by_email
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -38,14 +39,53 @@ def register(payload: UtilisateurRegister, db: Session = Depends(get_db)) -> Uti
 @router.post(
     "/login",
     response_model=Token,
-    summary="Se connecter",
-    description="Retourne un access token et un refresh token.",
+    summary="Se connecter (JSON)",
+    description="Retourne un access token et un refresh token via JSON.",
     responses={401: RESPONSES_401, 422: RESPONSES_422, 500: RESPONSES_500},
 )
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
     user = authenticate_user(db, payload)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    access_token, refresh_token = issue_token_pair_for_user(db, user)
+    return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.post(
+    "/token",
+    response_model=Token,
+    summary="Se connecter (OAuth2 Form)",
+    description="Endpoint compatible OAuth2 (form-data) pour Swagger UI.",
+    responses={401: RESPONSES_401, 422: RESPONSES_422, 500: RESPONSES_500},
+)
+def login_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+) -> Token:
+    # OAuth2 spec uses 'username', we map it to email
+    payload = LoginRequest(email=form_data.username, password=form_data.password)
+    user = authenticate_user(db, payload)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    access_token, refresh_token = issue_token_pair_for_user(db, user)
+    return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.post(
+    "/firebase",
+    response_model=Token,
+    summary="Se connecter via Firebase",
+    description="Valide un Firebase ID token et renvoie un couple access/refresh.",
+    responses={401: RESPONSES_401, 422: RESPONSES_422, 500: RESPONSES_500},
+)
+def login_firebase(payload: FirebaseLoginRequest, db: Session = Depends(get_db)) -> Token:
+    try:
+        user = authenticate_firebase_user(db, id_token=payload.id_token)
+    except ValueError as e:
+        detail = str(e) or "Invalid Firebase token"
+        if detail == "Firebase auth disabled" or detail == "Firebase auth not available":
+            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=detail)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
     access_token, refresh_token = issue_token_pair_for_user(db, user)
     return Token(access_token=access_token, refresh_token=refresh_token)
 
