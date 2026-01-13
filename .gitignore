@@ -40,4 +40,5 @@ smoke_test_endpoints.py
 endpoint_test_runner.py
 endpoint_tests.md
 ENDPOINT_TEST_RESULTS.md
+firebase-admin.json
 
