@@ -6,6 +6,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import UserRole
+from app.schemas.organisation import OrganisationRead
 
 
 class UtilisateurCreate(BaseModel):
@@ -34,5 +35,7 @@ class UtilisateurRead(BaseModel):
     nom_complet: str | None
     role: UserRole
     is_active: bool
+    organisation_id: uuid.UUID | None = Field(default=None, description="Organisation (organisateur uniquement).")
+    organisation: OrganisationRead | None = Field(default=None, description="Organisation (organisateur uniquement).")
     created_at: datetime
     updated_at: datetime

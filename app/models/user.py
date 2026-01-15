@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -51,6 +52,13 @@ class Organisateur(Utilisateur):
     id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("utilisateurs.id", ondelete="CASCADE"), primary_key=True
     )
+    organisation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("organisations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    organisation: Mapped[Optional["Organisation"]] = relationship(back_populates="organisateurs")
     __mapper_args__ = {"polymorphic_identity": UserRole.ORGANISATEUR}
 
 

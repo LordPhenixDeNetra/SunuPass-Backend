@@ -8,6 +8,8 @@ from app.api.v1 import (
     dashboard,
     events,
     exports,
+    geography,
+    organisations,
     payments,
     promo_codes,
     public_tickets,
@@ -30,3 +32,5 @@ router.include_router(dashboard.router)
 router.include_router(exports.router)
 router.include_router(notifications.router)
 router.include_router(public_tickets.router)
+router.include_router(geography.router)
+router.include_router(organisations.router)

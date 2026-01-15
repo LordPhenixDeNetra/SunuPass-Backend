@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from json import JSONDecodeError
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import Session
+from pydantic import ValidationError
 
 from app.api.openapi_responses import RESPONSES_401, RESPONSES_422, RESPONSES_500
 from app.db.session import get_db
@@ -39,11 +43,35 @@ def register(payload: UtilisateurRegister, db: Session = Depends(get_db)) -> Uti
 @router.post(
     "/login",
     response_model=Token,
-    summary="Se connecter (JSON)",
-    description="Retourne un access token et un refresh token via JSON.",
+    summary="Se connecter (JSON ou Form)",
+    description="Retourne un access token et un refresh token via JSON ou form-urlencoded.",
     responses={401: RESPONSES_401, 422: RESPONSES_422, 500: RESPONSES_500},
 )
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
+async def login(request: Request, db: Session = Depends(get_db)) -> Token:
+    content_type = (request.headers.get("content-type") or "").lower()
+    try:
+        if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            form = await request.form()
+            email = form.get("email") or form.get("username")
+            password = form.get("password")
+            payload = LoginRequest(email=email, password=password)
+        else:
+            data = await request.json()
+            payload = LoginRequest(**data)
+    except (ValidationError, TypeError) as e:
+        errors = e.errors() if isinstance(e, ValidationError) else []
+        raise RequestValidationError(errors) from e
+    except JSONDecodeError as e:
+        raise RequestValidationError(
+            [
+                {
+                    "loc": ("body",),
+                    "msg": "Invalid JSON",
+                    "type": "value_error.jsondecode",
+                }
+            ]
+        ) from e
+
     user = authenticate_user(db, payload)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
