@@ -11,14 +11,26 @@ from app.api.openapi_responses import AUTHZ_ERRORS, RESPONSES_404
 from app.db.session import get_db
 from app.models.event import evenement_agents
 from app.models.user import Admin, Agent, Organisateur, Utilisateur
-from app.schemas.event import EvenementCreate, EvenementRead, EvenementUpdate
+from app.schemas.event import (
+    EvenementCreate,
+    EvenementRead,
+    EvenementUpdate,
+    EventSessionCreate,
+    EventSessionRead,
+    EventSessionUpdate,
+)
 from app.schemas.pagination import Page
 from app.schemas.user import UtilisateurRead
 from app.services.events import (
     create_evenement,
+    create_event_session,
     delete_evenement,
+    delete_event_session,
     get_evenement,
+    get_event_session,
+    list_event_sessions,
     list_evenements_paginated,
+    update_event_session,
     update_evenement,
 )
 
@@ -207,3 +219,107 @@ def unassign_agent_from_event(
         evenement.agents.remove(agent)
         db.add(evenement)
         db.commit()
+
+
+@router.get(
+    "/{event_id}/sessions",
+    response_model=list[EventSessionRead],
+    summary="Lister les sessions d’un événement",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
+)
+def list_sessions(
+    event_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur, Agent)),
+) -> list[EventSessionRead]:
+    evenement = get_evenement(db, event_id)
+    if evenement is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    if isinstance(user, Organisateur) and evenement.organisateur_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if isinstance(user, Agent):
+        stmt = select(evenement_agents.c.agent_id).where(
+            evenement_agents.c.evenement_id == event_id,
+            evenement_agents.c.agent_id == user.id,
+        )
+        if db.execute(stmt).first() is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    return list_event_sessions(db, evenement_id=event_id)
+
+
+@router.post(
+    "/{event_id}/sessions",
+    response_model=EventSessionRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Créer une session d’événement",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
+)
+def create_session(
+    event_id: uuid.UUID,
+    payload: EventSessionCreate,
+    db: Session = Depends(get_db),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
+) -> EventSessionRead:
+    evenement = get_evenement(db, event_id)
+    if evenement is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    if isinstance(user, Organisateur) and evenement.organisateur_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    try:
+        return create_event_session(db, evenement=evenement, payload=payload)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.patch(
+    "/{event_id}/sessions/{session_id}",
+    response_model=EventSessionRead,
+    summary="Modifier une session d’événement",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
+)
+def patch_session(
+    event_id: uuid.UUID,
+    session_id: uuid.UUID,
+    payload: EventSessionUpdate,
+    db: Session = Depends(get_db),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
+) -> EventSessionRead:
+    evenement = get_evenement(db, event_id)
+    if evenement is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    if isinstance(user, Organisateur) and evenement.organisateur_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    session = get_event_session(db, session_id)
+    if session is None or session.evenement_id != event_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    try:
+        return update_event_session(db, session, payload)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete(
+    "/{event_id}/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Supprimer une session d’événement",
+    responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
+)
+def remove_session(
+    event_id: uuid.UUID,
+    session_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: Utilisateur = Depends(require_users(Admin, Organisateur)),
+) -> None:
+    evenement = get_evenement(db, event_id)
+    if evenement is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    if isinstance(user, Organisateur) and evenement.organisateur_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    session = get_event_session(db, session_id)
+    if session is None or session.evenement_id != event_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    delete_event_session(db, session)

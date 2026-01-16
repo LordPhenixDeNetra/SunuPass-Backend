@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import random
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -16,7 +18,7 @@ from app.core.security import (
 from app.core.settings import get_settings
 from app.db.session import SessionLocal
 from app.models.enums import EventStatus, PaymentStatus, PromoDiscountType, TicketStatus, UserRole
-from app.models.event import Evenement
+from app.models.event import Evenement, EventSession
 from app.models.geography import AdministrativeLevel, AdministrativeUnit, Country
 from app.models.notification import Notification
 from app.models.organisation import Organisation
@@ -118,13 +120,13 @@ def _create_user(
         user_cls = Participant
 
     user = user_cls(
+        id=uuid.uuid4(),
         email=email,
         nom_complet=nom_complet,
         hashed_password=hash_password(password),
         is_active=is_active,
     )
     db.add(user)
-    db.flush()
     return user
 
 
@@ -138,7 +140,6 @@ def _create_country(
 ) -> Country:
     row = Country(code=code, name=name, calling_code=calling_code, flag_svg=flag_svg)
     db.add(row)
-    db.flush()
     return row
 
 
@@ -149,9 +150,13 @@ def _create_administrative_level(
     name: str,
     level_order: int,
 ) -> AdministrativeLevel:
-    row = AdministrativeLevel(country_code=country.code, name=name, level_order=level_order)
+    row = AdministrativeLevel(
+        id=uuid.uuid4(),
+        country_code=country.code,
+        name=name,
+        level_order=level_order,
+    )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -166,6 +171,7 @@ def _create_administrative_unit(
     longitude: Decimal | None = None,
 ) -> AdministrativeUnit:
     row = AdministrativeUnit(
+        id=uuid.uuid4(),
         level_id=level.id,
         name=name,
         code=code,
@@ -174,7 +180,6 @@ def _create_administrative_unit(
         longitude=longitude,
     )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -189,6 +194,7 @@ def _create_organisation(
     telephone: str,
 ) -> Organisation:
     row = Organisation(
+        id=uuid.uuid4(),
         nom_organisation=nom_organisation,
         nb_employes_min=nb_employes_min,
         nb_employes_max=nb_employes_max,
@@ -197,7 +203,6 @@ def _create_organisation(
         telephone=telephone,
     )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -216,6 +221,7 @@ def _create_event(
     agents: list[Utilisateur] | None = None,
 ) -> Evenement:
     evt = Evenement(
+        id=uuid.uuid4(),
         organisateur_id=organisateur.id,
         titre=titre,
         description=description,
@@ -229,8 +235,28 @@ def _create_event(
     if agents:
         evt.agents = list(agents)
     db.add(evt)
-    db.flush()
     return evt
+
+
+def _create_event_session(
+    db: Session,
+    *,
+    evenement: Evenement,
+    starts_at: datetime,
+    ends_at: datetime,
+    label: str | None,
+    day_index: int | None,
+) -> EventSession:
+    row = EventSession(
+        id=uuid.uuid4(),
+        evenement=evenement,
+        starts_at=starts_at,
+        ends_at=ends_at,
+        label=label,
+        day_index=day_index,
+    )
+    db.add(row)
+    return row
 
 
 def _create_ticket_type(
@@ -246,6 +272,7 @@ def _create_ticket_type(
     is_active: bool = True,
 ) -> TicketType:
     row = TicketType(
+        id=uuid.uuid4(),
         evenement_id=evenement.id,
         code=code,
         label=label,
@@ -256,7 +283,6 @@ def _create_ticket_type(
         is_active=is_active,
     )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -273,6 +299,7 @@ def _create_promo_code(
     is_active: bool = True,
 ) -> PromoCode:
     row = PromoCode(
+        id=uuid.uuid4(),
         evenement_id=evenement.id,
         code=code,
         discount_type=discount_type,
@@ -284,7 +311,6 @@ def _create_promo_code(
         is_active=is_active,
     )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -322,6 +348,7 @@ def _create_ticket(
     base_price = Decimal(str(ticket_type.prix)).quantize(Decimal("0.01"))
     final_price = _compute_discounted_price(base_price=base_price, promo=promo)
     billet = Billet(
+        id=uuid.uuid4(),
         evenement_id=evenement.id,
         participant_id=None if participant is None else participant.id,
         guest_email=guest_email,
@@ -335,8 +362,9 @@ def _create_ticket(
         promo_code_id=None if promo is None else promo.id,
         statut=statut,
     )
+    if evenement.sessions:
+        billet.sessions = list(evenement.sessions)
     db.add(billet)
-    db.flush()
     return billet
 
 
@@ -350,6 +378,7 @@ def _create_payment(
     date_paiement: datetime | None,
 ) -> Paiement:
     paiement = Paiement(
+        id=uuid.uuid4(),
         billet_id=billet.id,
         montant=montant,
         moyen=moyen,
@@ -357,7 +386,6 @@ def _create_payment(
         date_paiement=date_paiement,
     )
     db.add(paiement)
-    db.flush()
     return paiement
 
 
@@ -366,11 +394,17 @@ def _create_scan(
     *,
     billet: Billet,
     agent: Utilisateur,
+    session_id: uuid.UUID | None,
     result: str,
 ) -> TicketScan:
-    row = TicketScan(billet_id=billet.id, agent_id=agent.id, result=result)
+    row = TicketScan(
+        id=uuid.uuid4(),
+        billet_id=billet.id,
+        agent_id=agent.id,
+        session_id=session_id,
+        result=result,
+    )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -382,9 +416,15 @@ def _create_notification(
     title: str,
     body: str,
 ) -> Notification:
-    row = Notification(user_id=user.id, type=type_, title=title, body=body, is_read=False)
+    row = Notification(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        type=type_,
+        title=title,
+        body=body,
+        is_read=False,
+    )
     db.add(row)
-    db.flush()
     return row
 
 
@@ -398,23 +438,17 @@ def _create_refresh_token(
     jti = new_jti()
     refresh_token = create_refresh_token(subject=str(user.id), jti=jti)
     row = RefreshToken(
+        id=uuid.uuid4(),
         user_id=user.id,
         jti=jti,
         token_hash="",
         expires_at=expires_at,
-        revoked=False,
+        revoked=revoked,
     )
     from app.core.security import hash_token
 
     row.token_hash = hash_token(refresh_token)
     db.add(row)
-    db.flush()
-
-    if revoked:
-        row.revoked = True
-        db.add(row)
-        db.flush()
-
     return row
 
 
@@ -539,7 +573,7 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
             role=UserRole.ORGANISATEUR,
             password="Org123!",
         )
-        for i in range(1, 6)
+        for i in range(1, 11)
     ]
     for idx, orga in enumerate(organisateurs):
         orga.organisation_id = organisations[idx % len(organisations)].id
@@ -554,7 +588,7 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
             role=UserRole.AGENT,
             password="Agent123!",
         )
-        for i in range(1, 9)
+        for i in range(1, 13)
     ]
     participants: list[Participant] = [
         _create_user(
@@ -564,7 +598,7 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
             role=UserRole.PARTICIPANT,
             password="Pass123!",
         )
-        for i in range(1, 41)
+        for i in range(1, 121)
     ]
 
     published_events: list[Evenement] = []
@@ -615,6 +649,34 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
             ended_events.append(evt)
         else:
             draft_events.append(evt)
+
+    festival = next((e for e in published_events if e.titre == "Festival SunuPass 2026"), None)
+    if festival is not None:
+        for i in range(5):
+            starts_at = festival.date_debut + timedelta(days=i)
+            ends_at = starts_at + timedelta(hours=10)
+            _create_event_session(
+                db,
+                evenement=festival,
+                starts_at=starts_at,
+                ends_at=ends_at,
+                label=f"Jour {i + 1}",
+                day_index=i + 1,
+            )
+
+    hackathon = next((e for e in published_events if e.titre == "Hackathon"), None)
+    if hackathon is not None:
+        for i in range(2):
+            starts_at = hackathon.date_debut + timedelta(days=i)
+            ends_at = starts_at + timedelta(hours=12)
+            _create_event_session(
+                db,
+                evenement=hackathon,
+                starts_at=starts_at,
+                ends_at=ends_at,
+                label=f"Jour {i + 1}",
+                day_index=i + 1,
+            )
 
     def _add_standard_stack(evenement: Evenement, *, base_price: Decimal) -> dict[str, TicketType]:
         standard = _create_ticket_type(
@@ -683,7 +745,8 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
             is_active=True,
         )
 
-        buyer_count = min(25 + idx * 2, max(30, evt.capacite // 8))
+        buyer_count = min(80 + idx * 5, max(35, evt.capacite // 5))
+        billets_for_event: list[Billet] = []
         for j in range(buyer_count):
             participant = participants[(idx * 7 + j) % len(participants)]
             selected_type = types_map["STANDARD"] if j % 5 else types_map["VIP"]
@@ -711,6 +774,7 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
                 statut=statut,
                 qr_code=qr,
             )
+            billets_for_event.append(billet)
 
             if statut in {TicketStatus.PAYE, TicketStatus.UTILISE}:
                 _create_payment(
@@ -755,7 +819,13 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
 
             if statut == TicketStatus.UTILISE:
                 agent = agents[(idx + j) % len(agents)]
-                _create_scan(db, billet=billet, agent=agent, result="OK")
+                _create_scan(
+                    db,
+                    billet=billet,
+                    agent=agent,
+                    session_id=None if not billet.session_ids else billet.session_ids[0],
+                    result="OK",
+                )
                 _create_notification(
                     db,
                     user=participant,
@@ -764,7 +834,24 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
                     body=f"Entrée validée pour {evt.titre}.",
                 )
 
-        guest_count = 5
+        if evt.sessions:
+            scan_agent = evt.agents[0] if evt.agents else agents[idx % len(agents)]
+            scannable_billets = [b for b in billets_for_event if b.statut in {TicketStatus.PAYE, TicketStatus.UTILISE}]
+            scannable_billets.sort(key=lambda b: b.created_at or now)
+            for b in scannable_billets[:10]:
+                if b.statut != TicketStatus.UTILISE:
+                    b.statut = TicketStatus.UTILISE
+                    db.add(b)
+                for s in evt.sessions:
+                    _create_scan(
+                        db,
+                        billet=b,
+                        agent=scan_agent,
+                        session_id=s.id,
+                        result="OK",
+                    )
+
+        guest_count = min(10, max(3, evt.capacite // 50))
         for k in range(guest_count):
             selected_type = types_map["STUDENT"] if k % 2 else types_map["STANDARD"]
             qr = f"SEED-{evt.id.hex[:10]}-G{k:03d}-{selected_type.code}"
@@ -780,6 +867,8 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
                 statut=TicketStatus.CREE,
                 qr_code=qr,
             )
+
+        db.flush()
 
     evt = _create_event(
         db,
@@ -817,7 +906,7 @@ def seed(db: Session, *, reset: bool = True) -> SeedResult:
         usage_limit=200,
         is_active=True,
     )
-    for j in range(40):
+    for j in range(80):
         participant = participants[(j * 5) % len(participants)]
         qr = f"SEED-{evt.id.hex[:10]}-{j:04d}-STANDARD"
         billet = _create_ticket(

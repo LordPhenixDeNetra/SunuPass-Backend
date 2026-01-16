@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.enums import PromoDiscountType
-from app.models.event import Evenement
+from app.models.event import Evenement, EventSession
 from app.models.promo_code import PromoCode
 from app.models.ticket import Billet
 from app.models.ticket_type import TicketType
@@ -16,6 +16,29 @@ from app.schemas.ticket import BilletCreate, BilletGuestPurchase, BilletUpdate
 from app.services.notifications import create_notification
 from app.services.promo_codes import get_promo_code_by_code
 from app.services.pagination import paginate
+
+
+def _resolve_sessions_for_purchase(
+    db: Session,
+    *,
+    evenement_id: uuid.UUID,
+    session_ids: list[uuid.UUID] | None,
+) -> list[EventSession]:
+    if session_ids is not None and len(session_ids) == 0:
+        raise ValueError("session_ids cannot be empty")
+
+    stmt = select(EventSession).where(EventSession.evenement_id == evenement_id)
+    if session_ids is not None:
+        stmt = stmt.where(EventSession.id.in_(session_ids))
+    stmt = stmt.order_by(EventSession.starts_at.asc())
+    sessions = list(db.execute(stmt).scalars().all())
+
+    if session_ids is not None:
+        expected = len(set(session_ids))
+        if len(sessions) != expected:
+            raise ValueError("Invalid session_ids")
+
+    return sessions
 
 
 def create_billet(db: Session, payload: BilletCreate) -> Billet:
@@ -90,6 +113,11 @@ def create_billet(db: Session, payload: BilletCreate) -> Billet:
 
     qr_code = payload.qr_code or f"QR-{uuid.uuid4()}"
 
+    sessions = _resolve_sessions_for_purchase(
+        db,
+        evenement_id=payload.evenement_id,
+        session_ids=payload.session_ids,
+    )
     ticket = Billet(
         evenement_id=payload.evenement_id,
         participant_id=payload.participant_id,
@@ -103,6 +131,8 @@ def create_billet(db: Session, payload: BilletCreate) -> Billet:
         qr_code=qr_code,
         promo_code_id=None if promo is None else promo.id,
     )
+    if sessions:
+        ticket.sessions = sessions
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
@@ -189,6 +219,11 @@ def create_billet_guest(db: Session, payload: BilletGuestPurchase) -> Billet:
 
     qr_code = f"QR-{uuid.uuid4()}"
 
+    sessions = _resolve_sessions_for_purchase(
+        db,
+        evenement_id=payload.evenement_id,
+        session_ids=payload.session_ids,
+    )
     ticket = Billet(
         evenement_id=payload.evenement_id,
         participant_id=None,
@@ -202,6 +237,8 @@ def create_billet_guest(db: Session, payload: BilletGuestPurchase) -> Billet:
         qr_code=qr_code,
         promo_code_id=None if promo is None else promo.id,
     )
+    if sessions:
+        ticket.sessions = sessions
     db.add(ticket)
     db.commit()
     db.refresh(ticket)

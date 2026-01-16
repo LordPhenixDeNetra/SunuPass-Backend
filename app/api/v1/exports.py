@@ -5,7 +5,7 @@ import io
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -36,11 +36,19 @@ def export_participants_csv(
     if not isinstance(user, Admin) and evt.organisateur_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
+    last_scan_subq = (
+        select(
+            TicketScan.billet_id.label("billet_id"),
+            func.max(TicketScan.scanned_at).label("scanned_at"),
+        )
+        .group_by(TicketScan.billet_id)
+        .subquery()
+    )
     stmt = (
-        select(Billet, Paiement, Utilisateur, TicketScan)
+        select(Billet, Paiement, Utilisateur, last_scan_subq.c.scanned_at)
         .join(Utilisateur, Utilisateur.id == Billet.participant_id, isouter=True)
         .join(Paiement, Paiement.billet_id == Billet.id, isouter=True)
-        .join(TicketScan, TicketScan.billet_id == Billet.id, isouter=True)
+        .join(last_scan_subq, last_scan_subq.c.billet_id == Billet.id, isouter=True)
         .where(Billet.evenement_id == event_id)
         .order_by(Billet.created_at.asc())
     )
@@ -62,7 +70,7 @@ def export_participants_csv(
             "scanned_at",
         ]
     )
-    for billet, paiement, participant, scan in rows:
+    for billet, paiement, participant, scanned_at in rows:
         email = billet.guest_email if participant is None else participant.email
         nom_complet = billet.guest_nom_complet if participant is None else (participant.nom_complet or "")
         participant_id = "" if participant is None else str(participant.id)
@@ -77,7 +85,7 @@ def export_participants_csv(
                 str(billet.prix),
                 "" if paiement is None else str(paiement.statut),
                 "" if paiement is None else paiement.moyen,
-                "" if scan is None else (scan.scanned_at.isoformat() if scan.scanned_at else ""),
+                "" if scanned_at is None else scanned_at.isoformat(),
             ]
         )
 

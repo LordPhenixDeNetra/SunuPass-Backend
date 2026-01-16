@@ -17,6 +17,10 @@ class BilletCreate(BaseModel):
     prix: Decimal | None = Field(default=None, ge=0, description="Prix du billet.", examples=["5000.00"])
     promo_code: str | None = Field(default=None, description="Code promo à appliquer (optionnel).", examples=["EARLY10"])
     qr_code: str | None = Field(default=None, description="Code QR du billet (optionnel).")
+    session_ids: list[uuid.UUID] | None = Field(
+        default=None,
+        description="Optionnel: sessions (jours/créneaux) achetées. Par défaut: toutes les sessions de l’événement.",
+    )
 
 
 class BilletGuestPurchase(BaseModel):
@@ -28,6 +32,10 @@ class BilletGuestPurchase(BaseModel):
     guest_email: str = Field(..., description="Email du participant invité.", examples=["invite@example.com"])
     guest_nom_complet: str | None = Field(default=None, description="Nom complet de l’invité.", examples=["Awa Diop"])
     guest_phone: str | None = Field(default=None, description="Téléphone de l’invité.", examples=["+221770000000"])
+    session_ids: list[uuid.UUID] | None = Field(
+        default=None,
+        description="Optionnel: sessions (jours/créneaux) achetées. Par défaut: toutes les sessions de l’événement.",
+    )
 
 
 class BilletUpdate(BaseModel):
@@ -54,5 +62,6 @@ class BilletRead(BaseModel):
     qr_code: str | None
     promo_code_id: uuid.UUID | None
     statut: TicketStatus
+    session_ids: list[uuid.UUID]
     created_at: datetime
     updated_at: datetime

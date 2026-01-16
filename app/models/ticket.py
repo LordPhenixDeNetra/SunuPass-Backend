@@ -5,11 +5,19 @@ from decimal import Decimal
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Numeric, String, Table, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.enums import TicketStatus
+
+
+billet_sessions = Table(
+    "billet_sessions",
+    Base.metadata,
+    Column("billet_id", ForeignKey("billets.id", ondelete="CASCADE"), primary_key=True),
+    Column("session_id", ForeignKey("event_sessions.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Billet(Base):
@@ -47,3 +55,12 @@ class Billet(Base):
     ticket_type: Mapped[Optional["TicketType"]] = relationship(back_populates="billets")
     promo_code: Mapped[Optional["PromoCode"]] = relationship(back_populates="billets")
     scans: Mapped[list["TicketScan"]] = relationship(back_populates="billet", cascade="all, delete-orphan")
+    sessions: Mapped[list["EventSession"]] = relationship(
+        "EventSession",
+        secondary="billet_sessions",
+        back_populates="billets",
+    )
+
+    @property
+    def session_ids(self) -> list[uuid.UUID]:
+        return [s.id for s in self.sessions]
