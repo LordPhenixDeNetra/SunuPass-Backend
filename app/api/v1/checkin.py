@@ -21,6 +21,7 @@ router = APIRouter(prefix="/checkin", tags=["checkin"])
     "/scan",
     response_model=TicketScanResponse,
     summary="Scanner un QR code (check-in)",
+    description="Valide un billet via son QR code et enregistre un scan. Pour les événements multi-jours, session_id permet de valider une journée précise.",
     responses=AUTHZ_ERRORS,
 )
 def scan_qr(

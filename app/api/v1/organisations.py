@@ -30,6 +30,7 @@ router = APIRouter(prefix="/organisations", tags=["organisations"])
     response_model=OrganisationRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer une organisation",
+    description="Crée une organisation (ADMIN uniquement).",
     responses=AUTHZ_ERRORS,
 )
 def create_organisation_endpoint(
@@ -44,6 +45,7 @@ def create_organisation_endpoint(
     "",
     response_model=Page[OrganisationRead],
     summary="Lister les organisations",
+    description="Liste paginée des organisations (ADMIN uniquement).",
     responses=AUTHZ_ERRORS,
 )
 def list_organisations(
@@ -61,6 +63,7 @@ def list_organisations(
     "/me",
     response_model=OrganisationRead,
     summary="Lire mon organisation",
+    description="Retourne l’organisation associée à l’organisateur connecté.",
     responses=AUTHZ_ERRORS,
 )
 def read_my_organisation(
@@ -79,6 +82,7 @@ def read_my_organisation(
     "/{organisation_id}",
     response_model=OrganisationRead,
     summary="Lire une organisation",
+    description="Retourne une organisation par id. Un organisateur ne peut lire que sa propre organisation.",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def read_organisation(
@@ -98,6 +102,7 @@ def read_organisation(
     "/{organisation_id}",
     response_model=OrganisationRead,
     summary="Modifier une organisation",
+    description="Met à jour une organisation (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_organisation(
@@ -116,6 +121,7 @@ def patch_organisation(
     "/{organisation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer une organisation",
+    description="Supprime une organisation (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def delete_organisation_endpoint(
@@ -133,6 +139,7 @@ def delete_organisation_endpoint(
     "/{organisation_id}/organisateurs/{organisateur_id}",
     response_model=UtilisateurRead,
     summary="Assigner une organisation à un organisateur",
+    description="Associe un organisateur à une organisation (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def assign_to_organisateur(
@@ -157,6 +164,7 @@ def assign_to_organisateur(
     "/organisateurs/{organisateur_id}",
     response_model=UtilisateurRead,
     summary="Désassigner l'organisation d'un organisateur",
+    description="Retire l’association entre un organisateur et son organisation (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def unassign_from_organisateur(
@@ -171,4 +179,3 @@ def unassign_from_organisateur(
         if detail == "User not found":
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
-

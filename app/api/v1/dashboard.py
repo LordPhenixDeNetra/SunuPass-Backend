@@ -20,6 +20,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
     "/events/{event_id}",
     response_model=EventDashboard,
     summary="Dashboard événement",
+    description="Retourne les indicateurs et statistiques d’un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def get_event_dashboard(

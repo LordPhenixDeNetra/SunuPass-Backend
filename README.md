@@ -65,6 +65,29 @@ Endpoints de base :
 - `GET /health` → `{"status":"ok"}`
 - Préfixe API v1 : `/api/v1`
 
+## Exploitation côté application web (nouveautés OpenAPI)
+
+Les endpoints exposent désormais des descriptions complètes dans la spec OpenAPI. Une application web peut exploiter cela pour améliorer l’UX et réduire le code “manuel”.
+
+Accès à la spec :
+
+- Swagger UI : `GET /docs`
+- OpenAPI JSON : `GET /openapi.json`
+
+Cas d’usage concrets :
+
+- Générer un client typé à partir de `/openapi.json` (ex: génération TypeScript) pour éviter de dupliquer les DTO et réduire les erreurs d’intégration.
+- Construire des formulaires dynamiques (création d’événement, billets, paiements, codes promo, géographie) en utilisant les schémas et descriptions comme libellés/infobulles.
+- Afficher une aide contextuelle par écran (ex: “Scanner un QR code (check-in)” → règles et droits attendus) en reprenant `summary`/`description`.
+- Regrouper automatiquement le menu et les écrans par domaine via les `tags` (`events`, `tickets`, `payments`, `checkin`, `exports`, `notifications`, etc.).
+- Gérer finement les erreurs avec les réponses standardisées (401/403/404/422/500) pour afficher des messages adaptés (session expirée, accès interdit, validation).
+
+Exemples de parcours web qui tirent parti de ces fonctionnalités :
+
+- Espace organisateur : CRUD événements, types de billets, codes promo, export CSV des participants.
+- Espace agent : scan de QR code (check-in) avec vérification des droits par événement/session.
+- Espace participant/invité : achat de billet (y compris sans compte via `/api/v1/public/tickets/purchase`), consultation de billets, notifications.
+
 ## Authentification (access token + refresh token)
 
 Le login renvoie un couple de tokens :

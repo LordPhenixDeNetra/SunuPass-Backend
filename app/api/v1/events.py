@@ -140,6 +140,7 @@ def remove_event(
     "/{event_id}/agents",
     response_model=list[UtilisateurRead],
     summary="Lister les agents d’un événement",
+    description="Retourne les agents assignés à un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def list_event_agents(
@@ -165,6 +166,7 @@ def list_event_agents(
     "/{event_id}/agents/{agent_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Assigner un agent à un événement",
+    description="Ajoute un agent à la liste des agents d’un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def assign_agent_to_event(
@@ -195,6 +197,7 @@ def assign_agent_to_event(
     "/{event_id}/agents/{agent_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Retirer un agent d’un événement",
+    description="Retire un agent de la liste des agents d’un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def unassign_agent_from_event(
@@ -225,6 +228,7 @@ def unassign_agent_from_event(
     "/{event_id}/sessions",
     response_model=list[EventSessionRead],
     summary="Lister les sessions d’un événement",
+    description="Retourne les sessions (jours) d’un événement. Les agents doivent être assignés à l’événement.",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def list_sessions(
@@ -254,6 +258,7 @@ def list_sessions(
     response_model=EventSessionRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer une session d’événement",
+    description="Crée une session (jour/slot) pour un événement multi-jours (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def create_session(
@@ -277,6 +282,7 @@ def create_session(
     "/{event_id}/sessions/{session_id}",
     response_model=EventSessionRead,
     summary="Modifier une session d’événement",
+    description="Met à jour une session d’événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_session(
@@ -305,6 +311,7 @@ def patch_session(
     "/{event_id}/sessions/{session_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer une session d’événement",
+    description="Supprime une session d’événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def remove_session(

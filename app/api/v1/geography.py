@@ -46,6 +46,7 @@ router = APIRouter(prefix="/geography", tags=["geography"])
     "/countries",
     response_model=Page[CountryRead],
     summary="Lister les pays",
+    description="Liste paginée des pays disponibles.",
 )
 def list_countries(
     limit: int = Query(50, ge=1, le=200, description="Taille de page"),
@@ -60,6 +61,7 @@ def list_countries(
     "/countries/{country_code}",
     response_model=CountryRead,
     summary="Lire un pays",
+    description="Retourne un pays par son code ISO alpha-3.",
     responses={404: RESPONSES_404},
 )
 def read_country(country_code: str, db: Session = Depends(get_db)) -> CountryRead:
@@ -74,6 +76,7 @@ def read_country(country_code: str, db: Session = Depends(get_db)) -> CountryRea
     response_model=CountryRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer un pays",
+    description="Crée un pays (ADMIN uniquement).",
     responses=AUTHZ_ERRORS,
 )
 def create_country_endpoint(
@@ -88,6 +91,7 @@ def create_country_endpoint(
     "/countries/{country_code}",
     response_model=CountryRead,
     summary="Modifier un pays",
+    description="Met à jour un pays (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_country(
@@ -106,6 +110,7 @@ def patch_country(
     "/countries/{country_code}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un pays",
+    description="Supprime un pays (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def delete_country_endpoint(
@@ -123,6 +128,7 @@ def delete_country_endpoint(
     "/administrative-levels",
     response_model=Page[AdministrativeLevelRead],
     summary="Lister les niveaux administratifs",
+    description="Liste paginée des niveaux administratifs, optionnellement filtrée par pays.",
 )
 def list_levels(
     limit: int = Query(50, ge=1, le=200, description="Taille de page"),
@@ -143,6 +149,7 @@ def list_levels(
     "/administrative-levels/{level_id}",
     response_model=AdministrativeLevelRead,
     summary="Lire un niveau administratif",
+    description="Retourne un niveau administratif par id.",
     responses={404: RESPONSES_404},
 )
 def read_level(level_id: uuid.UUID, db: Session = Depends(get_db)) -> AdministrativeLevelRead:
@@ -157,6 +164,7 @@ def read_level(level_id: uuid.UUID, db: Session = Depends(get_db)) -> Administra
     response_model=AdministrativeLevelRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer un niveau administratif",
+    description="Crée un niveau administratif (ADMIN uniquement).",
     responses=AUTHZ_ERRORS,
 )
 def create_level_endpoint(
@@ -171,6 +179,7 @@ def create_level_endpoint(
     "/administrative-levels/{level_id}",
     response_model=AdministrativeLevelRead,
     summary="Modifier un niveau administratif",
+    description="Met à jour un niveau administratif (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_level(
@@ -189,6 +198,7 @@ def patch_level(
     "/administrative-levels/{level_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un niveau administratif",
+    description="Supprime un niveau administratif (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def delete_level_endpoint(
@@ -206,6 +216,7 @@ def delete_level_endpoint(
     "/administrative-units",
     response_model=Page[AdministrativeUnitRead],
     summary="Lister les unités administratives",
+    description="Liste paginée des unités administratives, filtrable par niveau ou parent.",
 )
 def list_units(
     limit: int = Query(50, ge=1, le=200, description="Taille de page"),
@@ -228,6 +239,7 @@ def list_units(
     "/administrative-units/{unit_id}",
     response_model=AdministrativeUnitRead,
     summary="Lire une unité administrative",
+    description="Retourne une unité administrative par id.",
     responses={404: RESPONSES_404},
 )
 def read_unit(unit_id: uuid.UUID, db: Session = Depends(get_db)) -> AdministrativeUnitRead:
@@ -242,6 +254,7 @@ def read_unit(unit_id: uuid.UUID, db: Session = Depends(get_db)) -> Administrati
     response_model=AdministrativeUnitRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer une unité administrative",
+    description="Crée une unité administrative (ADMIN uniquement).",
     responses=AUTHZ_ERRORS,
 )
 def create_unit_endpoint(
@@ -256,6 +269,7 @@ def create_unit_endpoint(
     "/administrative-units/{unit_id}",
     response_model=AdministrativeUnitRead,
     summary="Modifier une unité administrative",
+    description="Met à jour une unité administrative (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_unit(
@@ -274,6 +288,7 @@ def patch_unit(
     "/administrative-units/{unit_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer une unité administrative",
+    description="Supprime une unité administrative (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def delete_unit_endpoint(
@@ -285,4 +300,3 @@ def delete_unit_endpoint(
     if unit is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrative unit not found")
     delete_administrative_unit(db, unit)
-

@@ -20,6 +20,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
     "",
     response_model=list[NotificationRead],
     summary="Lister mes notifications",
+    description="Retourne les notifications de l’utilisateur connecté, triées par date de création.",
     responses=AUTHZ_ERRORS,
 )
 def list_my_notifications(
@@ -36,6 +37,7 @@ def list_my_notifications(
     "/{notification_id}/read",
     response_model=NotificationRead,
     summary="Marquer une notification comme lue",
+    description="Met à jour le statut lu/non-lu d’une notification appartenant à l’utilisateur connecté.",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def mark_read(
@@ -50,4 +52,3 @@ def mark_read(
     if row.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     return mark_notification_read(db, row, is_read=payload.is_read)
-

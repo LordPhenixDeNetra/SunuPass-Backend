@@ -98,6 +98,7 @@ def patch_payment(
     "/{payment_id}/refund",
     response_model=PaiementRead,
     summary="Rembourser un paiement",
+    description="Déclenche le remboursement d'un paiement (ADMIN uniquement).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def refund_payment(

@@ -39,6 +39,7 @@ def _require_owner_or_admin(user: Utilisateur, evt: Evenement) -> None:
     "",
     response_model=list[TicketTypeRead],
     summary="Lister les types de billets",
+    description="Retourne les types de billets configurés pour un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def list_types(
@@ -56,6 +57,7 @@ def list_types(
     response_model=TicketTypeRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer un type de billet",
+    description="Crée un type de billet pour un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def create_type(
@@ -76,6 +78,7 @@ def create_type(
     "/{ticket_type_id}",
     response_model=TicketTypeRead,
     summary="Modifier un type de billet",
+    description="Met à jour un type de billet (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_type(
@@ -97,6 +100,7 @@ def patch_type(
     "/{ticket_type_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un type de billet",
+    description="Supprime un type de billet (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def remove_type(

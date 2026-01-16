@@ -23,6 +23,7 @@ router = APIRouter(prefix="/exports", tags=["exports"])
 @router.get(
     "/events/{event_id}/participants.csv",
     summary="Exporter les participants (CSV)",
+    description="Génère un export CSV des billets d’un événement avec participant/invité, paiement et date du dernier scan.",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def export_participants_csv(

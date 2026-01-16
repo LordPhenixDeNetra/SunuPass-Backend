@@ -39,6 +39,7 @@ def _require_owner_or_admin(user: Utilisateur, evt: Evenement) -> None:
     "",
     response_model=list[PromoCodeRead],
     summary="Lister les codes promo",
+    description="Retourne les codes promo d’un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def list_promos(
@@ -56,6 +57,7 @@ def list_promos(
     response_model=PromoCodeRead,
     status_code=status.HTTP_201_CREATED,
     summary="Créer un code promo",
+    description="Crée un code promo pour un événement (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def create_promo(
@@ -76,6 +78,7 @@ def create_promo(
     "/{promo_code_id}",
     response_model=PromoCodeRead,
     summary="Modifier un code promo",
+    description="Met à jour un code promo (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def patch_promo(
@@ -97,6 +100,7 @@ def patch_promo(
     "/{promo_code_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Supprimer un code promo",
+    description="Supprime un code promo (ADMIN ou organisateur propriétaire).",
     responses={**AUTHZ_ERRORS, 404: RESPONSES_404},
 )
 def remove_promo(
